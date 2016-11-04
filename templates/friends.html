@@ -1,0 +1,22 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+    <div class = "row-fluid">
+            <div class = "col-sm-6 col-md-3">
+                <h3>Friends</h3>
+            <ul class="list-group">
+            {% for friend in friends %}
+                <li class="list-group-item">{{friend[0] + ' ' + friend[1]}}</li>
+            {% endfor %}
+            </ul>
+            <form method="post" action="{{ url_for('friends') }}">
+                <div class="form-group">
+                    <label for="email">Friend's Email:</label>
+                    <input type="email" class="form-control" name="email" required='true' />
+                </div>
+                <input type="submit" class="btn btn-primary" value="Add" />
+            </form>
+            </div>
+    </div>
+{% endblock %}

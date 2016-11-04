@@ -150,7 +150,7 @@ def friends():
 	if flask.request.method == 'GET':
 		uid = getUserIdFromEmail(flask_login.current_user.id)
 		friends = getFriends(uid)
-		return render_template('hello.html', friends=friends) 
+		return render_template('friends.html', friends=friends) 
 	else:
 		try:
 			friend_email=request.form.get('email')
@@ -360,6 +360,22 @@ def upload_file():
 def search():
 	if request.method == 'POST':
 		tags = request.form.get('tags')
+		tag_list = [(tag) for tag in tags.split(' ')]
+		print tag_list
+		cursor = conn.cursor()
+
+		format_strings = ','.join(['%s'] * len(tag_list))
+		cursor.execute("SELECT picture_id FROM Tags where tag IN (%s)" % format_strings, tuple(tag_list))
+		picture_ids = cursor.fetchall()
+		print picture_ids
+
+		cursor.executemany("SELECT picture_id, thumbnail, caption, user_id, likes FROM Photos WHERE picture_id = %s", picture_ids)
+		data = cursor.fetchall()
+		print data
+		uid = None
+		if loggedin():
+			uid = getUserIdFromEmail(flask_login.current_user.id)
+		return render_template('album.html', loggedin=loggedin(), album=tags, photos=data, isalbum=False, css="img-thumbnail", owner=uid)
 	else:
 		return redirect(url_for('get_albums'))
 

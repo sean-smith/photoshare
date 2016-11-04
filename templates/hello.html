@@ -21,20 +21,6 @@
     </ul>
 {% endif %}
 
-{% if friends %}
-<h2>Here's your friends</h2>
-    <ul>
-    {% for friend in friends %}
-        <li>{{friend[0] + ' ' + friend[1]}}</li>
-    {% endfor %}
-    </ul>
-    <form method="post" action="{{ url_for('friends') }}">
-        <label for="email">Friend's Email:</label>
-        <input type="text" name="email" required='true' /><br />
-        <input type="submit" value="Add" />
-    </form>
-{% endif %}
-
 {% if message is none %}
   <p>You should <a href='/login'>login!</a></p>
 {% else %}
