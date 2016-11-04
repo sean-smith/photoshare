@@ -1,0 +1,52 @@
+<!-- Base Page -->
+<!doctype html>
+<html>
+<head>
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <!-- Optional theme -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+    <style>
+        body { padding-top: 70px; }
+    </style>
+    <title>Photoshare!</title>
+</head>
+
+<body>
+
+    <div class="container-fluid">
+    <nav class="navbar navbar-default navbar-fixed-top">
+      <div class="container">
+        <ul class="nav navbar-nav">
+            <li><a href='/albums'>All Albums</a></li>
+            <li><a href='/friends'>Friends</a></li>
+            <li><a href='/create_album'>Create Album</a></li>
+            <li><a href='/upload'>Upload a photo</a> </li>
+            {% if loggedin %}
+                <li><a href='/logout'>Logout</a></li> 
+            {% else %}
+                <li><a href='/login'>Login</a></li>   
+            {% endif %}
+            <div class="col-md-3">
+                <form method="post" action="{{ url_for('search') }}">
+                    <div class="input-group">
+                    <input type="text" class="form-control" name="tags" placeholder="Search for...">
+                    <span class="input-group-btn">
+                        <button class="btn btn-default" type="button">Go!</button>
+                    </span>
+                    </div>
+                </form>
+            </div>
+        </ul>
+      </div>
+    </nav>
+    </div>
+
+    <div id="content">{% block content %}{% endblock %}</div>
+
+
+    <!-- Latest compiled and minified JavaScript -->
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+</body>
+</html>

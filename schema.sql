@@ -9,7 +9,7 @@ CREATE TABLE Users (
     user_id int4  AUTO_INCREMENT,
     fname varchar(255),
     lname varchar(255),
-    email varchar(255) UNIQUE,
+    email varchar(255) UNIQUE NOT NULL,
     dob DATE,
     hometown varchar(255),
     gender varchar(7),  
@@ -19,9 +19,10 @@ CREATE TABLE Users (
 
 CREATE TABLE Photos
 (
-  picture_id int4  AUTO_INCREMENT,
+  picture_id int4 AUTO_INCREMENT,
   album_id int4,
   user_id int4,
+  likes  int4 NOT NULL DEFAULT 0,
   imgdata longblob,
   thumbnail longblob,
   caption VARCHAR(255),
@@ -29,9 +30,16 @@ CREATE TABLE Photos
   CONSTRAINT pictures_pk PRIMARY KEY (picture_id)
 );
 
+CREATE TABLE Tags 
+(
+  tag varchar(255),
+  picture_id int4,
+  PRIMARY KEY (tag, picture_id)
+);
+
 CREATE TABLE Albums
 (
-  album_id int4  AUTO_INCREMENT,
+  album_id int4 AUTO_INCREMENT,
   name varchar(255),
   owner int4,
   doc DATE,

@@ -1,0 +1,31 @@
+<!-- Renders a set of photos -->
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+{% if photos %}
+    <h2>Here's your Albums</h2>
+    <div class = "row-fluid">
+    {% for photo in photos %}
+        <div class = "col-sm-6 col-md-3">
+               <a href="/album/{{photo[0]}}">
+                <img class="{{css}}" src='data:image/png;base64, {{photo[1]}}' alt='{{photo[2]}}'/>
+                </a>
+                <!-- Caption -->
+                <div class = "caption">
+                     <h3>{{photo[2]}}</h3>
+                </div>
+                                
+                {% if photo[3] == owner %}
+                        <a href="/delete-album/{{photo[0]}}"><button type="button" class="btn btn-danger">Delete</button></a>
+                {% endif %}
+        </div>
+        
+    {% endfor %}
+    </div>
+{% else %}
+    <h2>No Albums found!</h2>
+{% endif %}
+</div>
+{% endblock %}

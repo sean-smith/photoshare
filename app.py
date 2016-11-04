@@ -85,24 +85,19 @@ def new_page_function():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
 	if flask.request.method == 'GET':
-		return '''
-			   <form action='login' method='POST'>
-				<input type='text' name='email' id='email' placeholder='email'></input>
-				<input type='password' name='password' id='password' placeholder='password'></input>
-				<input type='submit' name='submit'></input>
-			   </form></br>
-		   <a href='/'>Home</a>
-			   '''
+		return render_template("login.html")
 	#The request method is POST (page is recieving data)
 	email = flask.request.form['email']
 	cursor = conn.cursor()
 	#check if email is registered
-	if cursor.execute("SELECT password FROM Users WHERE email = '{0}'".format(email)):
+	if cursor.execute("SELECT password, user_id FROM Users WHERE email = '{0}'".format(email)):
 		data = cursor.fetchall()
 		pwd = str(data[0][0] )
+		user_id = str(data[0][1] )
 		if flask.request.form['password'] == pwd:
 			user = User()
 			user.id = email
+			user.user_id = user_id
 			flask_login.login_user(user) #okay login in user
 			return flask.redirect(flask.url_for('protected')) #protected is a function defined in this file
 
@@ -174,24 +169,127 @@ def friends():
 
 		return flask.redirect(flask.url_for('friends'))
 
-
-
+# Fetches a photo (id, thumbnail, caption)
+@app.route('/photo/<int:id>', methods=['GET'])
+def get_photo(id):
+	cursor = conn.cursor()
+	cursor.execute("SELECT picture_id, imgdata, caption, user_id, likes FROM Photos p WHERE picture_id = '{0}'".format(id))
+	data = cursor.fetchall()
+	uid = None
+	if loggedin():
+		uid = getUserIdFromEmail(flask_login.current_user.id)
+	return render_template('photos.html', loggedin=loggedin(), type="Photo", photos=data, css="img-fluid", owner=uid, tags=get_tags(id))
 
 # Fetches a list of photos [(img_thumb, name)]
 @app.route('/album/<int:id>', methods=['GET'])
-def getPictures(id):
+def get_album(id):
 	cursor = conn.cursor()
-	cursor.execute("SELECT thumbnail, caption FROM Photos p WHERE album_id = '{0}'".format(id))
+	cursor.execute("SELECT picture_id, thumbnail, caption, user_id, likes FROM Photos p WHERE album_id = '{0}'".format(id))
 	data = cursor.fetchall()
-	return render_template('photos.html', type="Album", photos=data)
+	album = get_album_data(id)
+	uid = None
+	if loggedin():
+		uid = getUserIdFromEmail(flask_login.current_user.id)
+	return render_template('album.html', loggedin=loggedin(), album=album[0], photos=data, isalbum=False, css="img-thumbnail", owner=uid)
 
 @app.route('/albums', methods=['GET'])
-def albums():
+def get_albums():
 	cursor = conn.cursor()
-	cursor.execute("SELECT thumbnail, name FROM Albums")
+	cursor.execute("SELECT album_id, thumbnail, name, owner FROM Albums")
 	data = cursor.fetchall()
-	return render_template('photos.html', type="Albums", photos=data)
+	uid = None
+	if not flask_login.current_user.get_id() is None:
+		uid = getUserIdFromEmail(flask_login.current_user.id)
+	return render_template('albums.html', loggedin=loggedin(), photos=data, css="img-thumbnail", owner=uid)
 
+# Get Photos by Tag
+@app.route('/tag/<tag>', methods=['GET'])
+def get_photo_by_tag(tag):
+	cursor = conn.cursor()
+	cursor.execute("SELECT p.picture_id, p.thumbnail, p.caption, p.user_id, p.likes FROM Photos p, Tags t WHERE t.picture_id = p.picture_id and t.tag = '{0}'".format(tag))
+	data = cursor.fetchall()
+	uid = None
+	if loggedin():
+		uid = getUserIdFromEmail(flask_login.current_user.id)
+	return render_template('album.html', loggedin=loggedin(), album=tag, photos=data, isalbum=False, css="img-thumbnail", owner=uid)
+
+def loggedin():
+	return not flask_login.current_user.get_id() is None
+
+def get_tags(picture_id):
+	cursor = conn.cursor()
+	cursor.execute("SELECT tag FROM Tags WHERE picture_id = {0}".format(picture_id))
+	return cursor.fetchall()
+
+def get_album_data(album_id):
+	cursor = conn.cursor()
+	cursor.execute("SELECT name, thumbnail FROM Albums WHERE album_id = '{0}'".format(album_id))
+	data = cursor.fetchone()
+	return data
+
+# Deletes an Album (id, thumbnail, caption)
+@app.route('/delete-album/<int:id>', methods=['GET'])
+@flask_login.login_required
+def delete_album(id):
+	user_id = getUserIdFromEmail(flask_login.current_user.id)
+	if is_album_owner(id, user_id):
+		cursor = conn.cursor()
+		cursor.execute("DELETE from Albums where album_id = '{0}'".format(id))
+		cursor.execute("DELETE from Photos where album_id = '{0}'".format(id))
+		data = cursor.fetchall()
+		return redirect(url_for('get_albums'))
+	else:
+		return render_template('hello.html', loggedin=True, message="You don't own that Album!")
+
+# Deletes an Album (id, thumbnail, caption)
+@app.route('/delete-photo/<int:id>', methods=['GET'])
+@flask_login.login_required
+def delete_photo(id):
+	user_id = getUserIdFromEmail(flask_login.current_user.id)
+	if is_album_owner(id, user_id):
+		cursor = conn.cursor()
+		cursor.execute("DELETE from Photos where picture_id = '{0}'".format(id))
+		data = cursor.fetchall()
+		return redirect(url_for('get_albums'))
+	else:
+		return render_template('hello.html', loggedin=True, message="You don't own that Photo!")
+
+@app.route('/like/<int:id>', methods=['GET'])
+@flask_login.login_required
+def like(id):
+	cursor = conn.cursor()
+	cursor.execute("UPDATE Photos SET likes = likes + 1 where picture_id = '{0}'".format(id))
+	conn.commit()
+	return redirect(url_for('get_photo', id=id))
+
+@app.route('/create_album', methods=['GET', 'POST'])
+@flask_login.login_required
+def create_album():
+	if request.method == 'POST':
+		name = request.form.get('name')
+		img = request.files['photo']
+		user_id = getUserIdFromEmail(flask_login.current_user.id)
+		photo_data = base64.standard_b64encode(img.read())
+		thumbnail = resize(photo_data, 200, 200)
+		add_album(name, thumbnail, user_id)
+		return redirect( url_for('get_albums') )
+	else:
+		return render_template("create_album.html", loggedin=True)
+
+
+def add_album(name, thumbnail, owner):
+	cursor = conn.cursor()
+	cursor.execute("INSERT INTO Albums (thumbnail, owner, name) VALUES ('{0}', '{1}', '{2}')".format(thumbnail, owner, name))
+	data = conn.commit()
+	print data
+
+def is_album_owner(album_id, owner):
+	cursor = conn.cursor()
+	cursor.execute("SELECT owner FROM Albums WHERE album_id = {0}".format(album_id))
+	data = cursor.fetchall()
+	if len(data) > 0:
+		return data[0][0] == owner
+	return None
 
 def getAlbums():
 	cursor = conn.cursor()
@@ -226,7 +324,7 @@ def isEmailUnique(email):
 @app.route('/profile')
 @flask_login.login_required
 def protected():
-	return render_template('hello.html', name=flask_login.current_user.id, message="Here's your profile")
+	return render_template('hello.html', loggedin=True, name=flask_login.current_user.id, message="Here's your profile")
 
 #begin photo uploading code
 # photos uploaded using base64 encoding so they can be directly embeded in HTML 
@@ -241,17 +339,50 @@ def upload_file():
 		uid = getUserIdFromEmail(flask_login.current_user.id)
 		imgfile = request.files['photo']
 		caption = request.form.get('caption')
-		print caption
+		album_id = request.form.get('album')
+		tags = request.form.get('tags')
 		photo_data = base64.standard_b64encode(imgfile.read())
 		thumbnail = resize(photo_data, 200, 200)
 		cursor = conn.cursor()
-		cursor.execute("INSERT INTO Photos (imgdata, thumbnail, user_id, caption) VALUES ('{0}', '{1}', '{2}', '{3}')".format(photo_data, thumbnail, uid, caption))
+		cursor.execute("INSERT INTO Photos (imgdata, thumbnail, user_id, caption, album_id) VALUES ('{0}', '{1}', '{2}', '{3}', '{4}')".format(photo_data, thumbnail, uid, caption, album_id))
 		conn.commit()
-		return render_template('hello.html', name=flask_login.current_user.id, message='Photo uploaded!', photos=getUsersPhotos(uid) )
+		picture_id = cursor.lastrowid
+		print picture_id
+		print tags
+		insert_tags(picture_id, tags)
+		return redirect( url_for('get_album', id=album_id))
 	#The method is GET so we return a  HTML form to upload the a photo.
 	else:
-		return render_template('upload.html')
-#end photo uploading code 
+		return render_template('upload.html', loggedin=True, albums=get_all_album_data())
+#end photo uploading code
+
+@app.route('/search', methods=['POST'])
+def search():
+	if request.method == 'POST':
+		tags = request.form.get('tags')
+	else:
+		return redirect(url_for('get_albums'))
+
+def insert_tags(picture_id, tags):
+	tag_list = tags.split(' ')
+	cursor = conn.cursor()
+	data = [(picture_id, tag) for tag in tag_list]
+	print data
+	stmt = "INSERT into Tags (picture_id, tag) VALUES (%s, %s)"
+	cursor.executemany(stmt, data)
+	conn.commit()
+
+def get_all_album_data():
+	cursor = conn.cursor()
+	cursor.execute("SELECT name, album_id FROM Albums")
+	data = cursor.fetchall()
+	return data
+
+def album_exists(album_id):
+	cursor = conn.cursor()
+	if cursor.execute("SELECT album_id FROM Albums WHERE album_id = '{0}'".format(album_id)):
+		return True
+	return False  
 
 # resizes if greater than (x,y) else returns original
 def resize(img, x,y):

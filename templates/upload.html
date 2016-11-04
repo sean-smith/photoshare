@@ -1,18 +1,33 @@
-<!-- author ben lawson (balawson@bu.edu) -->
-<head>
-    <title>Upload a photo!</title>
-</head>
-    <body>
-        <div class="title">
-            <h1>Upload a photo to Photoshare</h1>
-        </div>
-            <form method="post" action="{{ url_for('upload_file') }}" enctype=multipart/form-data>
-                <label for="album">Album id:</label>
-                <input type="number" name="album" required='true' /><br />
+{% extends "base.html" %}
+
+{% block content %}
+<div class="col-md-4 col-md-offset-4">
+    <div class="title">
+        <h3>Upload a photo!</h3>
+    </div>
+        <form method="post" action="{{ url_for('upload_file') }}" enctype=multipart/form-data>
+            <div class="form-group">
+                <label for="album">Album</label>
+                <select class="form-control" name="album">
+                    {% for album in albums %}
+                        <option value="{{album[1]}}">{{album[0]}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
                 <label for="photo">Select photo:</label>
-                <input type="file" name="photo" required='true' /><br />
+                <input type="file" class="form-control" name="photo" required='true' />
+            </div>
+            <div class="form-group">
                 <label for="caption">Please caption:</label>
-                <input type="text" name="caption" required='true' /><br />
-                <input type="submit" value="Upload" />
-            </form>
-    </body>
+                <input type="text" class="form-control" name="caption" required='true' />
+            </div>
+            <div class="form-group">
+                <label for="tags">Tags:</label>
+                <input type="text" class="form-control" name="tags" required='true' />
+            </div>
+            <input class="btn btn-primary" type="submit" value="Upload" />
+        </form>
+</div>
+{% endblock %}

@@ -4,37 +4,31 @@
 
 {% block content %}
 <div class="container-fluid">
+<h2>{{album}}</h2>
+<!-- <img class="{{css}}" src='data:image/png;base64, {{album[1]}}' alt='{{album[0]}}'/> -->
 {% if photos %}
     <div class = "row-fluid">
     {% for photo in photos %}
         <div class = "col-sm-6 col-md-3">
-            <h4>{{photo[2]}}</h4>
                 <a href="/photo/{{photo[0]}}">
                 <img class="{{css}}" src='data:image/png;base64, {{photo[1]}}' alt='{{photo[2]}}'/>
                 </a>
                 <!-- Caption -->
                 <div class = "caption">
+                     <h4>{{photo[2]}}</h4>
                      <p>Likes {{photo[4]}}</p>
-                </div>
-
-                <div class = "tags">
-                    {% for tag in tags %}
-                        <a href="{{ url_for('get_photo_by_tag', tag=tag[0]) }}"><span class="tag tag-primary">{{tag[0]}}</span></a>
-                    {% endfor %}
                 </div>
                                 
                 {% if photo[3] == owner %}
                         <a href="/delete-photo/{{photo[0]}}"><button type="button" class="btn btn-danger">Delete</button></a>
                         <a href="/like/{{photo[0]}}"><button type="button" class="btn btn-primary">Like</button></a>
                 {% endif %}
-
-                
         </div>
         
     {% endfor %}
     </div>
 {% else %}
-    <h2>No {{type}} found!</h2>
+    <h2>No Images found!</h2>
 {% endif %}
 </div>
 {% endblock %}
