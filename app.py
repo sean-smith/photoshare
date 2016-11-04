@@ -149,7 +149,7 @@ def register_user():
 def friends():
 	if flask.request.method == 'GET':
 		uid = getUserIdFromEmail(flask_login.current_user.id)
-		friends = getFriends(uid)
+		friends = get Friends(uid)
 		return render_template('friends.html', friends=friends) 
 	else:
 		try:
